@@ -355,3 +355,36 @@ type AdapterP a b s t = forall p. Profunctor p => Optic p a b s t
 -- conversion
 adapterC2P :: Adapter a b s t -> AdapterP a b s t
 adapterC2P (Adapter from to) = dimap from to
+
+instance Profunctor (Adapter a b) where
+    dimap f g (Adapter from to) = Adapter (from . f) (g . to)
+
+adapterP2C :: AdapterP a b s t -> Adapter a b s t
+adapterP2C l = l (Adapter id id)
+
+
+-- Lenses
+
+-- Recall Lens a b s t = Lens {view :: s -> a, updat b x s -> t}
+
+type LensP a b s t = forall p. Cartesian p => Optic p a b s t
+
+type PrismP a b s t = forall p. CoCartesian p => Optic p a b s t
+
+type TraversalP a b s t = forall p. (Cartesian p, CoCartesian p, Monoidal p)
+    => Optic p a b s t
+
+-- 5 Composing Optics
+fork f g x = (f x, g x)
+
+
+πP1 :: Cartesian p => p a b -> p (a,c) (b,c)
+πP1 = dimap (fork fst id) (cross id snd) . first
+
+false = πP1 not (True,6) -- (False,6)
+
+πP11 :: LensP a b ((a,c),d) ((b,c),d)
+πP11 = πP1 . πP1
+
+fallse = πP11 not ((True, 6), "hello") -- ((False,6),"hello")
+
